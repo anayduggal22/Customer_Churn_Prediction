@@ -1,6 +1,6 @@
 # Customer Churn Prediction
 
-**Capstone Project — Phase 6**
+**Capstone Project**
 
 An end-to-end machine learning pipeline predicting customer churn for a telecom provider, covering data cleaning, exploratory analysis, class-imbalance handling, hyperparameter tuning, and full evaluation with a focus on recall over raw accuracy.
 
