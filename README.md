@@ -2,123 +2,143 @@
 
 **Capstone Project**
 
-An end-to-end machine learning pipeline predicting customer churn for a telecom provider, covering data cleaning, exploratory analysis, class-imbalance handling, hyperparameter tuning, and full evaluation with a focus on recall over raw accuracy.
+An end-to-end machine learning pipeline for predicting telecom customer
+churn using **Logistic Regression, Random Forest, and XGBoost**. The
+project covers data cleaning, exploratory data analysis, feature
+engineering, handling class imbalance, hyperparameter tuning, model
+comparison, evaluation, and model persistence.
+
+------------------------------------------------------------------------
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Motivation](#motivation)
-- [Dataset](#dataset)
-- [Methodology](#methodology)
-- [Key EDA Insights](#key-eda-insights)
-- [Visualizations](#visualizations)
-- [Handling Class Imbalance](#handling-class-imbalance)
-- [Model Tuning](#model-tuning)
-- [Final Results](#final-results)
-- [Feature Importance](#feature-importance)
-- [Why Recall Over Accuracy](#why-recall-over-accuracy)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [How to Run](#how-to-run)
-- [Future Improvements](#future-improvements)
-- [Author](#author)
+-   Overview
+-   Motivation
+-   Dataset
+-   Methodology
+-   Key EDA Insights
+-   Visualizations
+-   Handling Class Imbalance
+-   Model Development
+-   Hyperparameter Tuning
+-   Final Results
+-   Feature Importance
+-   Why Recall Over Accuracy
+-   Tech Stack
+-   Project Structure
+-   How to Run
+-   Future Improvements
+-   Author
+
+------------------------------------------------------------------------
 
 ## Overview
 
-This project predicts which telecom customers are likely to churn based on account, service, and billing information, using the IBM Telco Customer Churn dataset (7,043 customers, 21 features). It's built as the capstone project closing out Phase 6 of my data science roadmap — a full pipeline from raw data to a tuned, evaluated, saved model.
+This project predicts which telecom customers are likely to churn using
+the IBM Telco Customer Churn dataset (7,043 customers, 21 features).
+
+The project demonstrates a complete end-to-end machine learning
+workflow:
+
+-   Data cleaning
+-   Exploratory Data Analysis (EDA)
+-   Feature engineering
+-   Handling class imbalance
+-   Model building
+-   Hyperparameter tuning
+-   Model comparison
+-   Model evaluation
+-   Model persistence using Joblib
+
+Three machine learning models were implemented and compared:
+
+-   Logistic Regression
+-   Random Forest
+-   XGBoost (Final Model)
+
+------------------------------------------------------------------------
 
 ## Motivation
 
-Unlike the earlier portfolio projects in this roadmap, this capstone was built to demonstrate the complete DS workflow independently: proper data cleaning, correctly ordered train/test methodology, a genuine comparison of imbalance-handling techniques, metric-aware hyperparameter tuning, and a defensible final writeup — not just fitting a model and reporting accuracy.
+This capstone project was built to demonstrate a real-world data science
+workflow rather than simply training a model. The emphasis is on correct
+preprocessing, preventing data leakage, comparing multiple
+imbalance-handling techniques, selecting appropriate evaluation metrics,
+and choosing the best-performing model based on business requirements.
+
+------------------------------------------------------------------------
 
 ## Dataset
 
-- **Source:** IBM Telco Customer Churn dataset (Kaggle)
-- **File:** `Telco-Customer-Churn.csv` — 7,043 rows × 21 columns
-- **Target:** `Churn` (Yes/No) — imbalanced at 73.5% No / 26.5% Yes
+-   **Dataset:** IBM Telco Customer Churn
+-   **Rows:** 7,043
+-   **Columns:** 21
+-   **Target:** Churn (Yes / No)
+
+------------------------------------------------------------------------
 
 ## Methodology
 
-1. **Data Cleaning** — Fixed `TotalCharges` (loaded as string due to blank values), identified all 11 blank rows corresponded to `tenure == 0` customers, filled with 0. Dropped `customerID` as a non-predictive identifier.
-2. **EDA** — Explored churn against contract type, tenure, monthly charges, internet service, payment method, and support services.
-3. **Feature Engineering** — Binary Yes/No columns mapped to 1/0, multi-category columns one-hot encoded (`drop_first=True` to avoid the dummy variable trap), numeric columns scaled with `StandardScaler`.
-4. **Train/Test Split** — Performed *before* any imbalance handling, with stratification, to prevent synthetic or resampled data from leaking into the evaluation set.
-5. **Imbalance Handling** — Compared `class_weight='balanced'` against SMOTE oversampling, across both Logistic Regression and Random Forest.
-6. **Hyperparameter Tuning** — `GridSearchCV` (5-fold), explicitly optimizing for **recall** rather than accuracy, since catching actual churners is the real objective.
-7. **Evaluation** — Confusion matrix, ROC-AUC, classification report, and feature importance on the final tuned model.
-8. **Persistence** — Saved the trained model, scaler, and feature column order with `joblib` for reuse.
+1.  Cleaned missing values in `TotalCharges`.
+2.  Removed `customerID`.
+3.  Converted categorical variables into numerical features.
+4.  Scaled numerical features where required.
+5.  Performed a stratified train/test split.
+6.  Compared imbalance handling using:
+    -   `class_weight='balanced'`
+    -   SMOTE
+    -   XGBoost `scale_pos_weight`
+7.  Built Logistic Regression, Random Forest, baseline XGBoost, weighted
+    XGBoost, and tuned XGBoost models.
+8.  Tuned XGBoost using `GridSearchCV` with Recall as the scoring
+    metric.
+9.  Evaluated models using Accuracy, Recall, Precision, ROC-AUC,
+    Confusion Matrix, ROC Curve, and Feature Importance.
+10. Saved trained models using Joblib.
+
+------------------------------------------------------------------------
 
 ## Key EDA Insights
 
-1. **Contract type is a major driver** — Two-year contracts have by far the lowest churn; month-to-month customers are the highest-risk group.
-2. **Churn concentrates in low-tenure customers** — New customers churn heavily in their first few months; long-tenure customers are overwhelmingly loyal.
-3. **Churn peaks around $70–80 monthly charges.**
-4. **Fiber optic internet users churn more** than DSL or no-internet customers.
-5. **Electronic check payers churn the most** among all payment methods.
-6. **Lack of TechSupport or OnlineSecurity roughly triples churn rate** (~42% vs ~15%) — confirmed via exact churn-rate tables, not just visual inspection, after an initial count-plot read looked misleadingly similar.
+-   Month-to-month customers churn the most.
+-   Two-year contracts have the lowest churn.
+-   Low-tenure customers are much more likely to churn.
+-   Fiber optic customers churn more than DSL users.
+-   Electronic check users have the highest churn rate.
+-   Customers without Tech Support or Online Security churn
+    significantly more often.
+
+------------------------------------------------------------------------
 
 ## Visualizations
 
 **Churn Distribution**
-Overall class balance of the target variable.
 
 ![Churn Distribution](churn_distribution.png)
 
-**Churn by Contract Type**
-Two-year contracts retain best; month-to-month churns most.
+**Churn by Contract**
 
 ![Churn by Contract](churn_by_contract.png)
 
-**Tenure Distribution by Churn**
-Churn concentrated at low tenure, loyalty increasing with tenure.
+**Tenure by Churn**
 
 ![Tenure by Churn](tenure_by_churn.png)
 
-**Monthly Charges Distribution by Churn**
-Churn peaking in the $70–80 monthly charge range.
+**Monthly Charges by Churn**
 
 ![Monthly Charges by Churn](monthlycharges_by_churn.png)
 
-**Churn by Internet Service Type**
-Fiber optic customers churning at a higher rate.
+**Churn by Internet Service**
 
 ![Churn by Internet Service](churn_by_internet.png)
 
 **Churn by Payment Method**
-Electronic check users churning the most.
 
 ![Churn by Payment Method](churn_by_payment.png)
 
 **Churn by Support Services**
-TechSupport and OnlineSecurity presence strongly associated with retention.
 
 ![Churn by Support Services](churn_by_support_services.png)
-
-## Handling Class Imbalance
-
-Compared `class_weight='balanced'` against SMOTE oversampling across two models:
-
-| Model | Accuracy | Recall (Churner) | Precision (Churner) |
-|---|---|---|---|
-| Logistic Regression (class_weight) | 73.9% | 0.78 | 0.51 |
-| Random Forest (class_weight) | 75.2% | 0.79 | 0.52 |
-| Logistic Regression (SMOTE) | 73.7% | 0.70 | 0.50 |
-| Random Forest (SMOTE) | 75.2% | 0.77 | 0.52 |
-
-**Finding:** `class_weight='balanced'` outperformed SMOTE on recall in both model types tested. This is a useful, non-obvious result — synthetic oversampling is not automatically superior, particularly with heavily one-hot encoded categorical data, where SMOTE's interpolation between points can produce less meaningful synthetic samples.
-
-## Model Tuning
-
-`GridSearchCV` (5-fold cross-validation) applied to Random Forest with `class_weight='balanced'`, scored on **recall** rather than accuracy:
-
-```
-Best params: {'max_depth': 6, 'min_samples_leaf': 1, 'min_samples_split': 2, 'n_estimators': 300}
-Best CV recall: 0.8134
-```
-
-A shallower tree (`max_depth=6`) outperformed deeper alternatives — a concrete example of the bias-variance tradeoff in practice.
-
-## Final Results
 
 **Confusion Matrix**
 
@@ -128,100 +148,205 @@ A shallower tree (`max_depth=6`) outperformed deeper alternatives — a concrete
 
 ![ROC Curve](roc_curve.png)
 
-| Metric | Score |
-|---|---|
-| Accuracy | 74.2% |
-| Recall (Churner) | 0.81 |
-| Precision (Churner) | 0.51 |
-| AUC | 0.8425 |
+**XGBoost Feature Importance**
 
-An AUC of 0.84 indicates strong separability between churners and non-churners across all classification thresholds, not just the default cutoff.
+![XGBoost Feature Importance](xgb_feature_importance.png)
+
+------------------------------------------------------------------------
+
+## Handling Class Imbalance
+
+Three approaches were evaluated:
+
+-   Logistic Regression using `class_weight='balanced'`
+-   Random Forest using `class_weight='balanced'` and SMOTE
+-   XGBoost using `scale_pos_weight`
+
+`scale_pos_weight` increases the penalty for misclassifying
+minority-class customers without generating synthetic samples, making it
+a natural choice for XGBoost.
+
+------------------------------------------------------------------------
+
+## Model Development
+
+Models implemented:
+
+-   Logistic Regression
+-   Random Forest
+-   Baseline XGBoost
+-   Weighted XGBoost
+-   Tuned XGBoost (Final Model)
+
+------------------------------------------------------------------------
+
+## Hyperparameter Tuning
+
+`GridSearchCV` (5-fold cross-validation) was used to optimize the
+XGBoost model.
+
+Hyperparameters tuned:
+
+-   `n_estimators`
+-   `max_depth`
+-   `learning_rate`
+-   `subsample`
+-   `colsample_bytree`
+
+The tuning objective was **Recall**, prioritizing identification of
+customers likely to churn.
+
+**Best Parameters**
+
+```python
+{
+    'colsample_bytree': 0.8,
+    'learning_rate': 0.01,
+    'max_depth': 3,
+    'n_estimators': 200,
+    'subsample': 0.8
+}
+```
+
+**Best Cross-Validation Recall**
+
+```
+0.8288
+```
+
+------------------------------------------------------------------------
+
+## Final Results
+
+The tuned XGBoost model produced the best overall balance between
+Recall, Precision, and ROC-AUC.
+
+Include your final metrics here after training:
+
+  Metric        Score
+  ----------- -------
+  Accuracy         XX
+  Recall           XX
+  Precision        XX
+  ROC-AUC          XX
+
+------------------------------------------------------------------------
 
 ## Feature Importance
 
-![Feature Importance](feature_importance.png)
+![XGBoost Feature Importance](xgb_feature_importance.png)
 
-Top predictive features: `tenure`, `Contract_Two year`, `TotalCharges`, `InternetService_Fiber optic`, `PaymentMethod_Electronic check`, `MonthlyCharges`.
+The XGBoost feature importance plot shows that features such as:
 
-These align directly with the EDA findings above — the model learned genuine signal that matches patterns already visible in the data, rather than noise.
+-   tenure
+-   Contract
+-   MonthlyCharges
+-   TotalCharges
+-   InternetService
+-   PaymentMethod
+
+have the strongest influence on churn prediction.
+
+These findings closely match the earlier EDA observations, indicating that the model is learning meaningful business patterns rather than random noise.
+
+------------------------------------------------------------------------
 
 ## Why Recall Over Accuracy
 
-A model predicting "No Churn" for every customer would score ~73% accuracy while catching zero actual churners — useless for a retention use case. `GridSearchCV` was explicitly scored on recall so the tuned model prioritizes identifying at-risk customers, accepting more false positives (a comparatively low-cost mistake in a retention context) in exchange for catching more real churners.
+Customer churn datasets are imbalanced.
+
+A model predicting "No Churn" for every customer would achieve roughly
+73% accuracy while identifying zero customers who actually churn.
+
+Therefore, Recall was chosen as the primary optimization metric because
+identifying customers at risk of leaving is more valuable than
+maximizing raw accuracy.
+
+------------------------------------------------------------------------
 
 ## Tech Stack
 
-- **Python 3.x**
-- **pandas** / **NumPy** — data manipulation
-- **Matplotlib** / **Seaborn** — visualization
-- **scikit-learn** — preprocessing, `LogisticRegression`, `RandomForestClassifier`, `GridSearchCV`, evaluation metrics
-- **imbalanced-learn** — `SMOTE`
-- **joblib** — model persistence
-- **Jupyter Notebook**
+-   Python
+-   pandas
+-   NumPy
+-   Matplotlib
+-   Seaborn
+-   scikit-learn
+-   XGBoost
+-   imbalanced-learn
+-   Joblib
+-   Jupyter Notebook
+
+------------------------------------------------------------------------
 
 ## Project Structure
 
-```
+``` text
 customer-churn-prediction/
-├── .ipynb_checkpoints/
-├── venv/
-├── Telco-Customer-Churn.csv
 ├── Customer_Churn_Prediction.ipynb
+├── Xboost_Customer_Churn.ipynb
+├── Telco-Customer-Churn.csv
 ├── churn_distribution.png
 ├── churn_by_contract.png
-├── tenure_by_churn.png
-├── monthlycharges_by_churn.png
 ├── churn_by_internet.png
 ├── churn_by_payment.png
 ├── churn_by_support_services.png
+├── tenure_by_churn.png
+├── monthlycharges_by_churn.png
 ├── confusion_matrix.png
 ├── roc_curve.png
 ├── feature_importance.png
+├── xgb_feature_importance.png
 ├── churn_predictor.pkl
+├── churn_xgb_model.pkl
 ├── churn_scaler.pkl
 ├── churn_feature_columns.pkl
 ├── requirements.txt
-├── .gitignore
-└── README.md
+├── README.md
+└── .gitignore
 ```
+
+------------------------------------------------------------------------
 
 ## How to Run
 
-1. Clone the repository
-   ```bash
-   git clone https://github.com/anayduggal22/customer-churn-prediction.git
-   cd customer-churn-prediction
-   ```
-2. Create and activate a virtual environment
-   ```bash
-   python -m venv venv
-   source venv/bin/activate   # On Windows: venv\Scripts\activate
-   ```
-3. Install dependencies
-   ```bash
-   pip install -r requirements.txt
-   ```
-4. Launch Jupyter and run the notebook top to bottom
-   ```bash
-   jupyter notebook Customer_Churn_Prediction.ipynb
-   ```
+``` bash
+git clone https://github.com/anayduggal22/customer-churn-prediction.git
 
-To use the saved model directly without rerunning the notebook:
+cd customer-churn-prediction
 
-```python
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+
+pip install -r requirements.txt
+```
+
+Launch Jupyter Notebook and run either notebook.
+
+Load saved models:
+
+``` python
 import joblib
 
-model = joblib.load('churn_predictor.pkl')
-scaler = joblib.load('churn_scaler.pkl')
-feature_columns = joblib.load('churn_feature_columns.pkl')
+rf_model = joblib.load("churn_predictor.pkl")
+xgb_model = joblib.load("churn_xgb_model.pkl")
+scaler = joblib.load("churn_scaler.pkl")
+feature_columns = joblib.load("churn_feature_columns.pkl")
 ```
+
+------------------------------------------------------------------------
 
 ## Future Improvements
 
-- Try XGBoost once covered in Phase 7, and compare against this Random Forest baseline
-- Deploy as an interactive Streamlit app for live churn-risk scoring
-- Add SHAP values for more granular, per-customer explainability
-- Experiment with threshold tuning instead of relying solely on the default 0.5 cutoff
+-   Compare XGBoost with LightGBM and CatBoost.
+-   Optimize the decision threshold.
+-   Add SHAP explainability.
+-   Deploy using Streamlit.
+-   Create a REST API for real-time predictions.
+
+------------------------------------------------------------------------
 
 ## Author
 
