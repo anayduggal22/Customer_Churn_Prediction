@@ -3,11 +3,12 @@
 **Capstone Project**
 
 An end-to-end machine learning pipeline for predicting telecom customer
-churn using **Logistic Regression, Random Forest, XGBoost, and Ensemble
-Methods (Voting + Stacking)**. The project covers data cleaning,
+churn using **Logistic Regression, Random Forest, XGBoost, Ensemble
+Methods (Voting + Stacking), and a Keras Neural Network**, deployed as
+an interactive **Streamlit** web app. The project covers data cleaning,
 exploratory data analysis, feature engineering, handling class
-imbalance, hyperparameter tuning, model comparison, evaluation, and
-model persistence.
+imbalance, hyperparameter tuning, model comparison, evaluation, model
+persistence, and deployment.
 
 ------------------------------------------------------------------------
 
@@ -23,9 +24,11 @@ model persistence.
 -   Model Development
 -   Hyperparameter Tuning
 -   Ensemble Models
+-   Neural Network
 -   Final Results — All Models Compared
 -   Feature Importance
 -   Why Recall Over Accuracy
+-   Deployment — Streamlit App
 -   Tech Stack
 -   Project Structure
 -   How to Run
@@ -46,20 +49,22 @@ workflow:
 -   Exploratory Data Analysis (EDA)
 -   Feature engineering
 -   Handling class imbalance
--   Model building
+-   Model building (classical ML and deep learning)
 -   Hyperparameter tuning
 -   Ensembling (Voting + Stacking)
 -   Model comparison
 -   Model evaluation
 -   Model persistence using Joblib
+-   Deployment as a live interactive web app
 
-Five machine learning approaches were implemented and compared:
+Six machine learning approaches were implemented and compared:
 
 -   Logistic Regression
--   Random Forest (tuned — best single model on accuracy/precision balance)
+-   Random Forest (tuned)
 -   XGBoost (tuned)
 -   Voting Classifier (RF + XGBoost, soft voting)
 -   Stacking Classifier (RF + XGBoost, Logistic Regression meta-model — best AUC)
+-   Neural Network (Keras/TensorFlow, Dense layers)
 
 ------------------------------------------------------------------------
 
@@ -69,7 +74,8 @@ This capstone project was built to demonstrate a real-world data science
 workflow rather than simply training a model. The emphasis is on correct
 preprocessing, preventing data leakage, comparing multiple
 imbalance-handling techniques, selecting appropriate evaluation metrics,
-and choosing the best-performing model based on business requirements.
+comparing classical ML against deep learning on tabular data, and
+shipping a usable, interactive result rather than stopping at a notebook.
 
 ------------------------------------------------------------------------
 
@@ -87,17 +93,20 @@ and choosing the best-performing model based on business requirements.
 1.  Cleaned missing values in `TotalCharges` (11 rows, all tenure = 0, filled with 0).
 2.  Removed `customerID`.
 3.  Converted categorical variables into numerical features (binary mapping + one-hot encoding).
-4.  Scaled numerical features for Logistic Regression using `StandardScaler`.
+4.  Scaled numerical features where required (Logistic Regression, Neural Network) using `StandardScaler`.
 5.  Performed a stratified train/test split (80/20), split **before** any resampling to prevent data leakage.
 6.  Compared imbalance handling using:
     -   `class_weight='balanced'`
     -   SMOTE (Synthetic Minority Over-sampling)
     -   XGBoost's native `scale_pos_weight`
-7.  Built Logistic Regression, Random Forest (baseline + SMOTE), baseline XGBoost, weighted XGBoost, and tuned XGBoost models.
+    -   `class_weight` dictionary for the Neural Network
+7.  Built Logistic Regression, Random Forest (baseline + SMOTE), baseline/weighted/tuned XGBoost, Voting/Stacking ensembles, and a Keras Dense neural network.
 8.  Tuned Random Forest and XGBoost using `GridSearchCV` (5-fold CV) with **Recall** as the scoring metric.
 9.  Combined the tuned Random Forest and tuned XGBoost into a **Voting Classifier** (soft voting) and a **Stacking Classifier** (Logistic Regression meta-model).
-10. Evaluated all models using Accuracy, Recall, Precision, ROC-AUC, and Confusion Matrix.
-11. Saved trained models using Joblib.
+10. Built and trained a Keras neural network (Dense + Dropout layers) for comparison against classical ML.
+11. Evaluated all models using Accuracy, Recall, Precision, ROC-AUC, and Confusion Matrix.
+12. Saved trained models using Joblib (classical ML) and native Keras format (neural network).
+13. Deployed the best-performing model (Stacking Classifier) as an interactive Streamlit web app.
 
 ------------------------------------------------------------------------
 
@@ -161,11 +170,12 @@ and choosing the best-performing model based on business requirements.
 
 ## Handling Class Imbalance
 
-Three approaches were evaluated:
+Four approaches were evaluated:
 
 -   Logistic Regression using `class_weight='balanced'`
 -   Random Forest using `class_weight='balanced'` and separately with SMOTE
 -   XGBoost using `scale_pos_weight` (calculated as 2.769 — ratio of negative to positive training samples)
+-   Neural Network using a `class_weight` dictionary in `model.fit()`
 
 **Finding:** `class_weight='balanced'` outperformed SMOTE on recall for both Logistic Regression and Random Forest — a reminder that synthetic oversampling isn't automatically superior, especially with heavily one-hot encoded data.
 
@@ -176,6 +186,7 @@ Three approaches were evaluated:
 | SMOTE | Logistic Regression | 0.7374 | 0.70 | 0.50 |
 | SMOTE | Random Forest | 0.7523 | 0.77 | 0.52 |
 | `scale_pos_weight` | XGBoost | 0.7672 | 0.6845 | 0.5494 |
+| `class_weight` dict | Neural Network | 0.7303 | 0.8048 | 0.4951 |
 
 `scale_pos_weight` increases the penalty for misclassifying minority-class customers without generating synthetic samples, making it a natural choice for XGBoost.
 
@@ -192,6 +203,7 @@ Models implemented:
 -   Tuned XGBoost (GridSearchCV)
 -   Voting Classifier (RF + XGBoost, soft voting)
 -   Stacking Classifier (RF + XGBoost, Logistic Regression meta-model)
+-   Neural Network (Keras Dense + Dropout layers)
 
 ------------------------------------------------------------------------
 
@@ -233,7 +245,21 @@ Two ensemble approaches were built by combining the tuned Random Forest and tune
 -   **Voting Classifier** — soft voting (averages predicted probabilities), no additional training
 -   **Stacking Classifier** — a Logistic Regression meta-model trained (via 5-fold CV) on the base models' predictions, learning when to trust each one
 
-Both ensembles produced a small but real AUC improvement over either base model alone (0.8437 vs 0.8425), with Stacking edging ahead on accuracy and precision, and Voting keeping a slightly higher recall.
+Both ensembles produced a small but real AUC improvement over either base model alone (0.8437 vs 0.8425), with Stacking edging ahead on accuracy and precision, and Voting keeping a slightly higher recall. **The Stacking Classifier was selected as the final deployed model.**
+
+------------------------------------------------------------------------
+
+## Neural Network
+
+A Keras Sequential model was built to compare deep learning against the classical ML approaches on this tabular dataset:
+
+```text
+Input → Dense(32, ReLU) → Dropout(0.3) → Dense(16, ReLU) → Dropout(0.2) → Dense(1, Sigmoid)
+```
+
+Trained with `binary_crossentropy` loss, Adam optimizer, and a `class_weight` dictionary to address imbalance.
+
+**Finding:** the neural network (0.8337 AUC) performed slightly *below* the tuned tree-based models (0.8425) and ensembles (0.8437), despite a competitive recall (0.8048). This is a genuine, expected result rather than a shortcoming — deep learning typically needs larger datasets or unstructured data (images, text) to outperform gradient-boosted trees on tabular problems like this one (~7K rows, mostly categorical features).
 
 ------------------------------------------------------------------------
 
@@ -247,10 +273,11 @@ Both ensembles produced a small but real AUC improvement over either base model 
 | XGBoost (baseline) | 78.78% | 0.5214 | 0.6190 | 0.8225 |
 | XGBoost (weighted) | 76.72% | 0.6845 | 0.5494 | 0.8219 |
 | XGBoost (tuned, final) | 73.17% | 0.8075 | 0.4967 | 0.8425 |
-| **Voting Classifier (RF + XGBoost)** | 74.10% | 0.8155 | 0.5075 | **0.8437** |
-| **Stacking Classifier (RF + XGBoost)** | 74.59% | 0.8102 | 0.5136 | **0.8437** |
+| Neural Network (Keras) | 73.03% | 0.8048 | 0.4951 | 0.8337 |
+| Voting Classifier (RF + XGBoost) | 74.10% | 0.8155 | 0.5075 | 0.8437 |
+| **Stacking Classifier (RF + XGBoost) — Deployed** | 74.59% | 0.8102 | 0.5136 | **0.8437** |
 
-The Stacking and Voting classifiers produced the best ROC-AUC of all models tested (0.8437), a modest but genuine improvement over the tuned Random Forest and XGBoost models alone (both at 0.8425). Combining a bagged model (RF) with a boosted model (XGBoost) gave a small edge, consistent with the two models making somewhat different errors.
+The Stacking and Voting classifiers produced the best ROC-AUC of all models tested (0.8437), a modest but genuine improvement over the tuned Random Forest and XGBoost models alone (both at 0.8425), and ahead of the neural network (0.8337). Combining a bagged model (RF) with a boosted model (XGBoost) gave a small edge, consistent with the two models making somewhat different errors. **The Stacking Classifier was chosen as the final model deployed in the Streamlit app.**
 
 ------------------------------------------------------------------------
 
@@ -294,6 +321,29 @@ an actual churner.
 
 ------------------------------------------------------------------------
 
+## Deployment — Streamlit App
+
+The final **Stacking Classifier** is deployed as an interactive Streamlit
+web app (`app.py`) that lets a user enter a customer's details — contract
+type, tenure, internet service, support add-ons, billing method, and
+more — and get a live churn risk prediction with probability.
+
+Key implementation details:
+
+-   All 19 original input features are collected through Streamlit widgets (`selectbox`, `slider`, `number_input`), matching every column used in training.
+-   The app rebuilds the same one-hot encoded feature set used during training (`pd.get_dummies(drop_first=True)`) by initializing every feature to 0 and setting the relevant one-hot columns to 1 based on user input, so the input row exactly matches the model's expected schema.
+-   Numeric features (`tenure`, `MonthlyCharges`, `TotalCharges`) are passed directly, since the Stacking Classifier's base models (RF + XGBoost) don't require feature scaling.
+-   Column order is explicitly matched to the training feature order before prediction, to avoid silent misalignment.
+-   Displays a clear churn risk verdict (high/low) along with the predicted probability.
+
+Run locally with:
+
+```bash
+streamlit run app.py
+```
+
+------------------------------------------------------------------------
+
 ## Tech Stack
 
 -   Python
@@ -304,6 +354,8 @@ an actual churner.
 -   scikit-learn
 -   XGBoost
 -   imbalanced-learn
+-   TensorFlow / Keras
+-   Streamlit
 -   Joblib
 -   Jupyter Notebook
 
@@ -316,6 +368,8 @@ customer-churn-prediction/
 ├── Customer_Churn_Prediction.ipynb
 ├── Xboost_Customer_Churn.ipynb
 ├── ensemble_models.ipynb
+├── neural_network_model.ipynb
+├── app.py
 ├── Telco-Customer-Churn.csv
 ├── churn_distribution.png
 ├── churn_by_contract.png
@@ -328,12 +382,15 @@ customer-churn-prediction/
 ├── roc_curve.png
 ├── feature_importance.png
 ├── xgb_feature_importance.png
+├── nn_training_history.png
 ├── churn_predictor.pkl
 ├── churn_xgb_model.pkl
 ├── churn_voting_model.pkl
 ├── churn_stacking_model.pkl
 ├── churn_scaler.pkl
 ├── churn_feature_columns.pkl
+├── churn_nn_model.keras
+├── churn_nn_scaler.pkl
 ├── requirements.txt
 ├── README.md
 └── .gitignore
@@ -348,23 +405,31 @@ git clone https://github.com/anayduggal22/customer-churn-prediction.git
 
 cd customer-churn-prediction
 
-python -m venv venv
+py -3.12 -m venv venv312
 
 # Windows
-venv\Scripts\activate
+venv312\Scripts\activate
 
 pip install -r requirements.txt
 ```
 
-Launch Jupyter Notebook and run any of the three notebooks:
+Launch Jupyter Notebook and run any of the four notebooks:
 `Customer_Churn_Prediction.ipynb` (EDA + Logistic Regression + Random Forest),
-`Xboost_Customer_Churn.ipynb` (XGBoost), or
-`ensemble_models.ipynb` (Voting + Stacking).
+`Xboost_Customer_Churn.ipynb` (XGBoost),
+`ensemble_models.ipynb` (Voting + Stacking), or
+`neural_network_model.ipynb` (Keras Neural Network).
 
-Load saved models:
+**Run the deployed app:**
+
+```bash
+streamlit run app.py
+```
+
+Load saved models directly in Python:
 
 ``` python
 import joblib
+from tensorflow import keras
 
 rf_model = joblib.load("churn_predictor.pkl")
 xgb_model = joblib.load("churn_xgb_model.pkl")
@@ -372,6 +437,7 @@ voting_model = joblib.load("churn_voting_model.pkl")
 stacking_model = joblib.load("churn_stacking_model.pkl")
 scaler = joblib.load("churn_scaler.pkl")
 feature_columns = joblib.load("churn_feature_columns.pkl")
+nn_model = keras.models.load_model("churn_nn_model.keras")
 ```
 
 ------------------------------------------------------------------------
@@ -381,7 +447,7 @@ feature_columns = joblib.load("churn_feature_columns.pkl")
 -   Compare XGBoost with LightGBM and CatBoost.
 -   Optimize the decision threshold instead of using the default 0.5.
 -   Add SHAP explainability.
--   Deploy using Streamlit.
+-   Deploy the Streamlit app to Streamlit Community Cloud for public access.
 -   Create a REST API for real-time predictions.
 
 ------------------------------------------------------------------------
